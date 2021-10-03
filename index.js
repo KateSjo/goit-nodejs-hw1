@@ -1,69 +1,81 @@
-const { Command } = require('commander');
-const chalk = require('chalk');
+const chalk = require("chalk");
 const {
   listContacts,
   getContactById,
-  addContact,
   removeContact,
-} = require('./contact');
+  addContact,
+} = require("./contacts.js");
+const { Command } = require("commander");
 const program = new Command();
 program
-  .option('-a, --action <type>', 'choose action')
-  .option('-i, --id <type>', 'user id')
-  .option('-n, --name <type>', 'user name')
-  .option('-e, --email <type>', 'user email')
-  .option('-p, --phone <type>', 'user phone');
+  .option("-a, --action <type>", "choose action")
+  .option("-i, --id <type>", "user id")
+  .option("-n, --name <type>", "user name")
+  .option("-e, --email <type>", "user email")
+  .option("-p, --phone <type>", "user phone");
 
 program.parse(process.argv);
 
 const argv = program.opts();
 
-function invokeAction({ action, id, name, email, phone }) {
+async function invokeAction({ action, id, name, email, phone }) {
   switch (action) {
-    case 'list':
-      listContacts()
-        .then(contacts => console.table(contacts))
-        .catch(console.error);
-
+    case "list":
+      try {
+        const contacts = await listContacts();
+        if (contacts.length <= 0) {
+          return console.log(chalk.red("SORRY, THERE ARE NO CONTACTS"));
+        }
+        console.log(chalk.blue("HERE ARE YOUR CONTACTS"));
+        return console.table(contacts);
+      } catch (error) {
+        console.log(`SORRY, WE HAVE AN ERROR: ${error.message}`);
+      }
       break;
 
-    case 'get':
-      getContactById(id)
-        .then(contact => {
-          if (contact) {
-            console.log(chalk.green('Contact is found'));
-            console.log(contact);
-          } else {
-            console.log(chalk.red('Contact not found'));
-          }
-        })
-        .catch(console.error);
+    case "get":
+      try {
+        const contactById = await getContactById(id);
+        if (contactById) {
+          console.log(chalk.blue("THIS IS YOUR CONTACT"));
+          console.table(contactById);
+          return;
+        }
+        console.log(chalk.red("THERE IS NO CONTACTS WITH THIS ID"));
+        return;
+      } catch (err) {
+        console.log(`SORRY, WE HAVE AN ERROR: ${error.message}`);
+      }
       break;
 
-    case 'add':
-      addContact(name, email, phone)
-        .then(contact => {
-          console.log(chalk.green('Add new contact'));
-          console.log(contact);
-        })
-        .catch(console.error);
+    case "add":
+      try {
+        const contacts = await addContact(name, email, phone);
+        console.log(chalk.blue(`YOU HAVE ADDED A NEW CONTACT ${name}`));
+        console.table(contacts);
+      } catch (error) {
+        console.log(`SORRY, WE HAVE AN ERROR: ${error.message}`);
+      }
       break;
 
-    case 'remove':
-      removeContact(id)
-        .then(contact => {
-          if (contact) {
-            console.log(chalk.green('Contact has been removed'));
-            console.log(contact);
-          } else {
-            console.log(chalk.red('Contact not been removed'));
-          }
-        })
-        .catch(console.error);
+    case "remove":
+      try {
+        const contactFiltered = await removeContact(id);
+        if (contactFiltered) {
+          console.log(chalk.blue("ITS YOUR FILTERED CONTACTS"));
+          console.log(chalk.blue(`YOU REMOVED A CONTACT WITH ID = ${id}`));
+          console.table(contactFiltered);
+          return;
+        }
+        console.log(chalk.red("THERE IS NO CONTACTS WITH THIS ID"));
+        return;
+      } catch (err) {
+        console.log(`SORRY, WE HAVE AN ERROR: ${error.message}`);
+      }
       break;
 
     default:
-      console.warn(chalk.red('Unknown action type!'));
+      console.warn("\x1B[31m Unknown action type!");
   }
 }
 
